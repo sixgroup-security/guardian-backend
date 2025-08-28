@@ -1,0 +1,7 @@
+FROM nginx:1.25.2-alpine
+
+# Copy your Nginx configuration from the local directory to the container
+COPY ./docker/nginx /etc/nginx
+
+# Start Nginx as the low-privileged user when the container runs
+CMD ["nginx", "-g", "daemon off;"]

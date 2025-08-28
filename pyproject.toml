@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "guardian"
+version = "0.1.0"
+description = "Guardian is a cutting-edge penetration test reporting web application designed to empower penetration testers. Our platform streamlines the process of executing penetration tests, allowing security professionals to focus on what matters most—identifying vulnerabilities and fortifying defenses. With intuitive reporting features, Guardian ensures that documenting results is seamless and efficient, offering a comprehensive view into the security landscape of your systems. Illuminate the shadows, uncover vulnerabilities, and shine with Guardian."
+authors = ["Lukas Reiter <chopicalqui@protonmail.com>"]
+license = "Apache License 2.0"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = {version = "0.112.4", extras = ["standard"]}
+pydantic = "2.7.2"
+sqlmodel = "0.0.18"
+psycopg2-binary = "^2.9.9"
+python-dotenv = "1.0.1"
+httpx = "0.25.0"
+logger = "1.4"
+poetry = "^1.7.1"
+pytest = "7.4.2"
+python-jose = {version = "3.3.0", extras = ["cryptography"]}
+python-multipart = "0.0.7"
+schedule = "1.2.1"
+python-dateutil = "^2.9.0.post0"
+pandas = {extras = ["excel"], version = "^2.2.2"}
+websockets = "^12.0"
+cvss = "^3.1"
+redis = "^5.1.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

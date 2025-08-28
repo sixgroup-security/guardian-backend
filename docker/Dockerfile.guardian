@@ -1,0 +1,48 @@
+# Stage 1: Build and install dependencies
+FROM python:3.10-slim as builder
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="${PATH}:/root/.local/bin"
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the Python dependency files
+COPY pyproject.toml poetry.lock* /app/
+
+# Install Poetry and Python dependencies
+RUN pip install --no-cache-dir "poetry==1.8.2" \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi
+
+# Stage 2: Build the final image
+FROM builder AS base
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy installed dependencies from the builder stage
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy the application code to the container
+COPY app /app
+
+# Create a non-root user 'guardian'
+RUN groupadd -g 1001 -r guardian \
+    && useradd --no-log-init -u 1001 -r -g guardian guardian \
+    && mkdir /app/logs \
+    && chown -R guardian:guardian /app/logs
+
+# Use the non-root user to run the application
+USER guardian
+
+FROM base AS debug
+CMD ["bash"]
+
+FROM base AS test
+CMD ["uvicorn", "main:test", "--reload", "--host", "0.0.0.0", "--port", "8090"]
+
+FROM base AS production
+CMD ["uvicorn", "main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "9443"]

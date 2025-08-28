@@ -1,0 +1,105 @@
+version: "3.1"
+services:
+  proxy:
+    build:
+      dockerfile: ./docker/Dockerfile.nginx
+      context: .
+    container_name: guardian-nginx
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost/idp && curl --fail http://localhost/api
+      interval: 60s
+      retries: 5
+      timeout: 10s
+    depends_on:
+      - idp
+    ports:
+      - "8000:8000"
+
+  idp:
+    build:
+      dockerfile: ./docker/Dockerfile.keycloak
+      context: .
+    container_name: guardian-idp
+    volumes:
+      - ./docker/keycloak/data:/opt/keycloak/data/import
+    restart: unless-stopped
+    env_file:
+      - ./docker/.env.keycloak
+    healthcheck:
+      test: curl --fail http://localhost:8080/idp
+      interval: 60s
+      retries: 5
+      timeout: 10s
+    tty:
+        true
+    depends_on:
+      - idp-db
+
+  idp-db:
+    image: postgres:latest
+    container_name: guardian-idp-db
+    volumes:
+      - idp_db_data:/var/lib/postgresql/data
+    env_file:
+      - ./docker/.env.keycloak.db
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+  backend:
+    build:
+      dockerfile: ./docker/Dockerfile.guardian
+      target: production
+      context: .
+    container_name: guardian-backend
+    restart: unless-stopped
+    volumes:
+      - backend_data:/var/lib/guardian/data
+    env_file:
+      - ./app/.env.api
+      - ./app/.env.db
+      - ./app/.env.redis
+    environment:
+      DATA_LOCATION: /var/lib/guardian/data
+    healthcheck:
+      test: curl --fail http://localhost:8090/api
+      interval: 60s
+      retries: 5
+      timeout: 10s
+    tty:
+        true
+    depends_on:
+      - idp
+      - proxy
+      - backend-db
+    ports:
+      - "8090:8090"
+
+  backend-db:
+    image: postgres:latest
+    container_name: guardian-db
+    volumes:
+      - backend_db_data:/var/lib/postgresql/data
+      - C:\Develop\Temp:/storage
+      - C:\Develop\PyCharmProjects\guardian-migration\schema_versions:/schema_versions
+    env_file:
+      - ./app/.env.db
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    command: ["postgres", "-c", "log_min_messages=notice"]
+
+  backend-db-dev:
+    image: postgres:latest
+    container_name: guardian-db-dev
+    env_file:
+      - ./app/.env.db.test
+    ports:
+      - "5433:5432"
+    command: ["postgres", "-c", "log_min_messages=notice"]
+
+volumes:
+    backend_data:
+    backend_db_data:
+    idp_db_data:
